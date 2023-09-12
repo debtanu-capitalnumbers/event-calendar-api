@@ -2,7 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\V1\EventCalendarController;
+use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\LogoutController;
+use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\Event\EventController;
+use App\Http\Controllers\Api\Event\ActiveEventController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,8 +18,15 @@ use App\Http\Controllers\Api\V1\EventCalendarController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-Route::prefix('v1')->group(function () {
-    Route::apiResource('/v1/event-calendar', EventCalendarController::class);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('/events', EventController::class);
+    Route::patch('/events/{event}/active', ActiveEventController::class);
+});
+Route::prefix('auth')->group(function () {
+    Route::post('/login', LoginController::class);
+    Route::post('/logout', LogoutController::class)->middleware('auth:sanctum');
+    Route::post('/register', RegisterController::class);
 });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

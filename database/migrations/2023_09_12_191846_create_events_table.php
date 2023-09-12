@@ -11,19 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('event_calendars', function (Blueprint $table) {
+        Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 100);
+            $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->string('name');
             $table->text('description');
-            $table->string('location', 100);
-            $table->string('file_name', 100)->nullable();
-            $table->string('file_path', 200)->nullable();
-            $table->string('event_category', 100);
+            $table->string('location');
+            $table->string('file_name')->nullable();
+            $table->string('file_path')->nullable();
+            $table->string('event_category');
             $table->date('event_start_date');
             $table->time('event_start_time');
             $table->time('event_end_time');
-            $table->boolean('is_active')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -32,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('event_calendars');
+        Schema::dropIfExists('events');
     }
 };
