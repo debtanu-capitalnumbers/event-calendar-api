@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Models\EventCalendar;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEventCalendarRequest;
 use App\Http\Requests\UpdateEventCalendarRequest;
 
@@ -13,7 +14,7 @@ class EventCalendarController extends Controller
      */
     public function index()
     {
-        //
+        return EventCalendar::all();
     }
 
     /**
