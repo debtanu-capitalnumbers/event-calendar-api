@@ -14,8 +14,9 @@ class ActiveEventController extends Controller
      */
     public function __invoke(Request $request, Event $event)
     {
+        $this->authorize('update-active-event', $event);
         $event->is_active = $request->is_active;
-        $event->save();
+        $event->update();
 
         return EventResource::make($event);
     }
