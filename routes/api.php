@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Event\EventController;
+use App\Http\Controllers\Api\Event\EventnoauthController;
 use App\Http\Controllers\Api\Event\ActiveEventController;
 
 /*
@@ -23,12 +24,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/events', EventController::class);
     Route::patch('/events/{event}/active', ActiveEventController::class);
 });
+    Route::apiResource('/noauth-events', EventnoauthController::class);
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class);
     Route::post('/logout', LogoutController::class)->middleware('auth:sanctum');
     Route::post('/register', RegisterController::class);
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    })->middleware('auth:sanctum');
 });
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
