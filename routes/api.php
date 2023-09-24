@@ -4,10 +4,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
-use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Event\EventController;
-use App\Http\Controllers\Api\Event\EventnoauthController;
+use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Event\ActiveEventController;
+use App\Http\Controllers\Api\Event\EventnoauthController;
+use App\Http\Controllers\Api\Auth\ResetPasswordController;
+use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +29,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/noauth-events', EventnoauthController::class);
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class);
+    Route::post('/forgotPassword', ForgotPasswordController::class);
+    Route::post('/resetPassword', ResetPasswordController::class);
     Route::post('/logout', LogoutController::class)->middleware('auth:sanctum');
     Route::post('/register', RegisterController::class);
     Route::get('/user', function (Request $request) {
