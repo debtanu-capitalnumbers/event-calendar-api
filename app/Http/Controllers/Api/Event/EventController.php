@@ -23,7 +23,7 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $per_page = $request->get('per_page')?: 1;
+        $per_page = $request->get('per_page')?: 10;
         $search = trim($request->get('search'))?: null;
         $sort_by = $request->get('sort_by')?: 'DESC';
         $sort_field_name = $request->get('sort_field_name')?: 'id';
