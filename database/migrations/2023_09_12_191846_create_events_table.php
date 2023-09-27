@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->string('name');
+            $table->string('title');
             $table->text('description');
             $table->string('location');
             $table->string('file_name')->nullable();

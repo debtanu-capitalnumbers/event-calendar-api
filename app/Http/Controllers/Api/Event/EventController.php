@@ -29,7 +29,7 @@ class EventController extends Controller
         $sort_field_name = $request->get('sort_field_name')?: 'id';
         $collection = auth()->user()->events();
         if(!is_null($search)){
-            $collection = $collection->where('name', 'like', "%".$search."%");
+            $collection = $collection->where('title', 'like', "%".$search."%");
         }       
         if($sort_field_name == "event_start_date_time"){
             $collection = $collection->orderBy("event_start_date", $sort_by)->orderBy("event_start_time", $sort_by);
