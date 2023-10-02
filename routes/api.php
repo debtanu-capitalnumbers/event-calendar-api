@@ -26,7 +26,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/events', EventController::class);
     Route::patch('/events/{event}/active', ActiveEventController::class);
 });
-    Route::apiResource('/noauth-events', EventnoauthController::class);
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class);
     Route::post('/forgotPassword', ForgotPasswordController::class);
