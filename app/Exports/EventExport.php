@@ -18,7 +18,6 @@ class EventExport implements FromCollection, WithHeadings
      */
     public function collection()
     {
-        $this->collection = $this->collection->get();
         return EventResource::collection($this->collection);
         //return Event::select(['id','title'])->get();
     }
@@ -26,14 +25,14 @@ class EventExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
-            'title',
-            'description',
-            'location',
-            'event_category',
-            'event_start_date_time',
-            'event_end_date_time',
-            'is_active',
-            'created_at',
+            'Title',
+            'Description',
+            'Location',
+            'Category',
+            'Start date time',
+            'End date time',
+            'Is active',
+            'Created at',
         ];
     }
 }

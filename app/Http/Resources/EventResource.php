@@ -43,7 +43,7 @@ class EventResource extends JsonResource
                                             $data['is_active'] = (!isset($this->is_active)) ? true : (($this->is_active) ? true : false );
         if(!$request->is($export_url_path)) $data['file_name'] = $this->file_name;
         if(!$request->is($export_url_path)) $data['file_path'] = $this->file_path;
-        if(!$request->is($export_url_path)) $data['download_path'] = (is_null($this->file_path) || $this->file_path == "") ? "" : asset('storage/'.$this->file_path);
+        if(!$request->is($export_url_path)) $data['download_path'] = $this->download_path;
                                             $data['created_at'] = date('YYYY-mm-dd', strtotime($this->created_at));
         return $data;
     }

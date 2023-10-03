@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/events', EventController::class);
     Route::post('/events/{event}', [EventController::class, 'update']);
+    Route::get('/events/calendar/events', [EventController::class, 'allCalendarEvents']);
     Route::patch('/events/{event}/active', ActiveEventController::class);
     Route::post('/events/export/file', [EventController::class, 'export']);
 });

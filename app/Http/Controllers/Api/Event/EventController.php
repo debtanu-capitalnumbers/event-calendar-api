@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Event;
 
+use DateTime;
 use App\Models\Event;
 use Illuminate\Support\Str;
 use App\Exports\EventExport;
@@ -10,11 +11,17 @@ use Illuminate\Http\Response;
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Resources\EventResource;
+use App\Http\Resources\EventCalendarResource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use Illuminate\Support\Facades\Validator;
+use Spatie\IcalendarGenerator\Components\Calendar;
+use Spatie\IcalendarGenerator\Components\Timezone;
+use Spatie\IcalendarGenerator\Enums\TimezoneEntryType;
+use Spatie\IcalendarGenerator\Components\TimezoneEntry;
+use Spatie\IcalendarGenerator\Components\Event as CalendarEvent;
 
 class EventController extends Controller
 {
@@ -46,6 +53,17 @@ class EventController extends Controller
         $collection = $collection->paginate($per_page);
 
         return EventResource::collection($collection);
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function allCalendarEvents(Request $request)
+    {
+        $collection = auth()->user()->events();
+        $collection = $collection->get();
+
+        return EventCalendarResource::collection($collection);
     }
 
     /**
@@ -166,15 +184,53 @@ class EventController extends Controller
         $collection = $collection->where('event_start_date', '>=', $event_start_date);  
         $collection = $collection->where('event_start_date', '<=', $event_end_date);  
         $collection = $collection->orderBy("event_start_date", 'DESC')->orderBy("event_start_time", 'DESC');  
+        $collection = $collection->take(1)->get();
+        // dd($collection);
 
         if($event_data['export_type'] == "csv") {
-            my_export_csv();
             $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.csv';
+            my_export_csv();
             Excel::store(new EventExport($collection), $newfile, 'csvlocal');    
-            $url = asset('storage/csv/'.$newfile);
         } else {
+            $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.ics';
+            // $newfile = 'event-export-'.date('Y-m-d h:i:sP').'.ics';
+            // echo $newfile;
+            foreach ($collection as $key => $single_event) {
+                $create_event[] = CalendarEvent::create($single_event->title)
+                                ->image($single_event->download_path)
+                                ->name($single_event->title)
+                                ->address($single_event->location)
+                                ->description($single_event->description)
+                                ->uniqueIdentifier(Str::uuid()->toString())
+                                ->createdAt(new DateTime($single_event->event_start_date))
+                                ->startsAt(new DateTime($single_event->event_start_date.' '.$single_event->event_start_time))
+                                ->endsAt(new DateTime($single_event->event_start_date.' '.$single_event->event_end_time));
+            }
+            // $timezoneEntry = TimezoneEntry::create(
+            //     TimezoneEntryType::daylight(),
+            //     new DateTime($single_event->event_start_date),
+            //     '+00:00',
+            //     '+02:00'
+            // );
             
+            // $timezone = Timezone::create('Europe/Brussels')
+            //     ->entry($timezoneEntry);
+            
+            // $calendar = Calendar::create()
+            //     ->timezone($timezone)->event($create_event);
+            // $timezone = Timezone::create('Asia/Kolkata')->entry($timezoneEntry);
+            // $timezone = Timezone::create('Europe/London');
+            // $calendar = Calendar::create('Calendar with timezones')->timezone($timezone);
+            // $timezone = Timezone::create('Asia/Kolkata');
+            $calendar = Calendar::create('Event calendar')->event($create_event);
+            // return response($calendar->get(), 200, [
+            //     'Content-Type' => 'text/calendar; charset=utf-8',
+            //     'Content-Disposition' => 'attachment; filename="my-awesome-calendar.ics"',
+            // ]);
+            $calendar = Calendar::create('Event calendar')->event($create_event);
+            Storage::disk('local')->put('public/csv/'.$newfile, $calendar->get());
         }
+        $url = asset('storage/csv/'.$newfile);
         return response()->json(['url' => $url, 'message' => 'File generated successfully.'], 200);
     }
 }
