@@ -22,7 +22,13 @@ class EventResource extends JsonResource
         $data['event_category'] = $this->event_category;
         $data['event_start_date'] = $this->event_start_date;
         $data['event_start_time'] = $this->event_start_time;
+        $data['event_start_time_hours'] = date('h', strtotime($this->event_start_date.' '.$this->event_start_time));
+        $data['event_start_time_minutes'] = date('i', strtotime($this->event_start_date.' '.$this->event_start_time));
+        $data['event_start_time_seconds'] = date('s', strtotime($this->event_start_date.' '.$this->event_start_time));
         $data['event_end_time'] = $this->event_end_time;
+        $data['event_end_time_hours'] = date('h', strtotime($this->event_end_date.' '.$this->event_end_time));
+        $data['event_end_time_minutes'] = date('i', strtotime($this->event_end_date.' '.$this->event_end_time));
+        $data['event_end_time_seconds'] = date('s', strtotime($this->event_end_date.' '.$this->event_end_time));
         $data['event_start_date_time'] = date('m/d/Y - h:i A', strtotime($this->event_start_date.' '.$this->event_start_time));
         $data['event_end_date_time'] = date('m/d/Y - h:i A', strtotime($this->event_start_date.' '.$this->event_end_time));
         $data['is_active'] = (!isset($this->is_active)) ? "true" : (bool) $this->is_active;

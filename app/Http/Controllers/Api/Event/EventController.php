@@ -90,7 +90,29 @@ class EventController extends Controller
      */
     public function update(UpdateEventRequest $request, Event $event)
     {
-        $event->update($request->validated());
+        $event_data = $request->all();
+        if(!empty($event_data['cover_image'])){
+            $validator = Validator::make($request->all(), [
+                'cover_image' => 'required|mimes:png,jpg,jpeg|max:4096',
+            ], [
+                'cover_image.mimes' => 'Only support JPG/JPEG/PNG format.',
+                'cover_image.size' => 'Maximum upload image size 4MB.',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->messages()->all(), 'message' => 'Errors found for cover image.'], 422);
+            }
+            $cover_image = $event_data['cover_image'];
+            $path_parts = pathinfo($cover_image->getClientOriginalName());
+    
+            $fileName = Str::random(25).'-'.Str::slug($path_parts['filename']).'.'.$path_parts['extension'];
+            $filePath = 'event/'.auth()->user()->id.'/';
+    
+            $cover_image->move(storage_path('app/public/'.$filePath), $fileName);
+            $event_data['file_name'] = $fileName;
+            $event_data['file_path'] = $filePath.$fileName;
+        }
+        $event->update($event_data);
 
         return EventResource::make($event);
     }
