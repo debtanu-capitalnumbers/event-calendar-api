@@ -27,7 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/events/{event}', [EventController::class, 'update']);
     Route::get('/events/calendar/events', [EventController::class, 'allCalendarEvents']);
     Route::patch('/events/{event}/active', ActiveEventController::class);
-    Route::post('/events/export/file', [EventController::class, 'export']);
+    Route::post('/events/export/event', [EventController::class, 'export']);
+    Route::post('/events/import/event', [EventController::class, 'import']);
 });
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class);

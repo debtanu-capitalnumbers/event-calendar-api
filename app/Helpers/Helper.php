@@ -7,7 +7,7 @@ if (! function_exists('my_export_csv')) {
             File::makeDirectory($foldername, 0755, true, true);
         }
 
-        $fileSystemIterator = glob(storage_path('app/public/csv').'/*.{csv,ics,html}', GLOB_BRACE);
+        $fileSystemIterator = glob(storage_path('app/public/csv').'/*.{csv,ics,html,tmp}', GLOB_BRACE);
         $now = time();
         foreach ($fileSystemIterator as $file) {
             $filename = $file;

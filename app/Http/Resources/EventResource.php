@@ -22,7 +22,7 @@ class EventResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $export_url_path = 'api/events/export/file';
+        $export_url_path = 'api/events/export/event';
         if(!$request->is($export_url_path)) $data['id'] = $this->id;
         if(!$request->is($export_url_path)) $data['user_id'] = $this->user_id;
                                             $data['title'] = $this->title;
@@ -38,13 +38,15 @@ class EventResource extends JsonResource
         if(!$request->is($export_url_path)) $data['event_end_time_hours'] = date('h', strtotime($this->event_end_date.' '.$this->event_end_time));
         if(!$request->is($export_url_path)) $data['event_end_time_minutes'] = date('i', strtotime($this->event_end_date.' '.$this->event_end_time));
         if(!$request->is($export_url_path)) $data['event_end_time_seconds'] = date('s', strtotime($this->event_end_date.' '.$this->event_end_time));
-                                            $data['event_start_date_time'] = date('m/d/Y - h:i A', strtotime($this->event_start_date.' '.$this->event_start_time));
-                                            $data['event_end_date_time'] = date('m/d/Y - h:i A', strtotime($this->event_start_date.' '.$this->event_end_time));
-                                            $data['is_active'] = (!isset($this->is_active)) ? true : (($this->is_active) ? true : false );
+        if(!$request->is($export_url_path)) $data['event_start_date_time'] = date('m/d/Y - h:i A', strtotime($this->event_start_date.' '.$this->event_start_time));
+        if(!$request->is($export_url_path)) $data['event_end_date_time'] = date('m/d/Y - h:i A', strtotime($this->event_start_date.' '.$this->event_end_time));
+        if( $request->is($export_url_path)) $data['event_start_date_time'] = date('Y-m-d h:i:s', strtotime($this->event_start_date.' '.$this->event_start_time));
+        if( $request->is($export_url_path)) $data['event_end_date_time'] = date('Y-m-d h:i:s', strtotime($this->event_start_date.' '.$this->event_end_time));
+        if(!$request->is($export_url_path)) $data['is_active'] = (!isset($this->is_active)) ? true : (($this->is_active) ? true : false );
         if(!$request->is($export_url_path)) $data['file_name'] = $this->file_name;
         if(!$request->is($export_url_path)) $data['file_path'] = $this->file_path;
         if(!$request->is($export_url_path)) $data['download_path'] = $this->download_path;
-                                            $data['created_at'] = date('YYYY-mm-dd', strtotime($this->created_at));
+        if(!$request->is($export_url_path)) $data['created_at'] = date('Y-m-d', strtotime($this->created_at));
         return $data;
     }
 }

@@ -6,17 +6,18 @@ use DateTime;
 use App\Models\Event;
 use Illuminate\Support\Str;
 use App\Exports\EventExport;
+use App\Imports\EventImport;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Resources\EventResource;
-use App\Http\Resources\EventCalendarResource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\EventCalendarResource;
 use Spatie\IcalendarGenerator\Components\Calendar;
 use Spatie\IcalendarGenerator\Components\Timezone;
 use Spatie\IcalendarGenerator\Enums\TimezoneEntryType;
@@ -232,5 +233,37 @@ class EventController extends Controller
         }
         $url = asset('storage/csv/'.$newfile);
         return response()->json(['url' => $url, 'message' => 'File generated successfully.'], 200);
+    }
+    
+    /**
+     * export the specified resource from storage.
+     */
+    public function import(Request $request)
+    {
+        my_export_csv();
+        $validator = Validator::make($request->all(), [
+            'import_type' => 'required',
+            'import_file' => 'required|mimes:csv,txt,ics|max:4096',
+            // 'import_file' => 'required|mimes:text/csv,text/plain,application/csv,text/comma-separated-values,text/anytext,application/octet-stream,application/txt,text/calendar|max:4096',
+        ], [
+            'import_type.required' => 'The event import type field is required.',
+            'import_file.required' => 'The event import file is required.',
+            'import_file.mimes' => 'Only support CSV/CALENDAR format.',
+            'import_file.size' => 'Maximum upload image size 4MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->messages()->all(), 'message' => 'Errors found for import file.'], 422);
+        }  
+
+
+        $event_data = $request->all();
+
+        if($event_data['import_type'] == "csv") {
+            $file = $request->file('import_file');
+            Excel::import(new EventImport(auth()->user()->id), $file);
+        } else {
+        }
+        return response()->json(['message' => 'File imported successfully.'], 200);
     }
 }

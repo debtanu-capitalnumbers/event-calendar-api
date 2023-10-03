@@ -10,7 +10,7 @@ class Event extends Model
 {
     use HasFactory, SoftDeletes;
     
-    protected $fillable = ['title', 'description', 'location', 'file_name', 'file_path', 'event_category', 'event_start_date', 'event_start_time', 'event_end_time', 'is_active'];
+    protected $fillable = ['title', 'user_id', 'description', 'location', 'file_name', 'file_path', 'event_category', 'event_start_date', 'event_start_time', 'event_end_time', 'is_active'];
 
     protected $appends = ['download_path'];
     

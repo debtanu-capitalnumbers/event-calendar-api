@@ -31,8 +31,6 @@ class EventExport implements FromCollection, WithHeadings
             'Category',
             'Start date time',
             'End date time',
-            'Is active',
-            'Created at',
         ];
     }
 }
