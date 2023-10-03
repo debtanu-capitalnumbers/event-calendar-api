@@ -26,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/events', EventController::class);
     Route::post('/events/{event}', [EventController::class, 'update']);
     Route::patch('/events/{event}/active', ActiveEventController::class);
+    Route::post('/events/export/file', [EventController::class, 'export']);
 });
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class);

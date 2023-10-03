@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Api\Event;
 
 use App\Models\Event;
-use Illuminate\Http\Response;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Exports\EventExport;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Resources\EventResource;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
@@ -125,5 +127,54 @@ class EventController extends Controller
         $event->delete();
 
         return response()->noContent();
+    }
+    
+    /**
+     * export the specified resource from storage.
+     */
+    public function export(Request $request)
+    {
+        my_export_csv();
+        $validator = Validator::make($request->all(), [
+            'export_type' => 'required',
+            'event_start_date' => 'required',
+            'event_end_date' => 'required',
+        ], [
+            'export_type.required' => 'The event export type field is required.',
+            'event_start_date.required' => 'The event start date field is required.',
+            'event_end_date.required' => 'The event end date field is required.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->messages()->all(), 'message' => 'Errors found for cover image.'], 422);
+        }  
+
+
+        $event_data = $request->all();
+        $event_start_date = $event_data['event_start_date'];
+        $event_start_date_strtotime = strtotime($event_start_date);
+        
+        $event_end_date = $event_data['event_end_date'];
+        $event_end_date_strtotime = strtotime($event_end_date);
+
+        if($event_end_date_strtotime <= $event_start_date_strtotime){ 
+            $errors['event_end_date'][] = "The event end date must be greater than start date."; 
+            return response()->json(['errors' => $errors, 'message' => 'Errors found for date.'], 422);
+        }
+
+        $collection = auth()->user()->events();
+        $collection = $collection->where('event_start_date', '>=', $event_start_date);  
+        $collection = $collection->where('event_start_date', '<=', $event_end_date);  
+        $collection = $collection->orderBy("event_start_date", 'DESC')->orderBy("event_start_time", 'DESC');  
+
+        if($event_data['export_type'] == "csv") {
+            my_export_csv();
+            $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.csv';
+            Excel::store(new EventExport($collection), $newfile, 'csvlocal');    
+            $url = asset('storage/csv/'.$newfile);
+        } else {
+            
+        }
+        return response()->json(['url' => $url, 'message' => 'File generated successfully.'], 200);
     }
 }
