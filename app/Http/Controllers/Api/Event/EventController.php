@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Event;
 
 use DateTime;
+use ICal\ICal;
+use DateTimeZone;
 use App\Models\Event;
 use Illuminate\Support\Str;
 use App\Exports\EventExport;
@@ -23,6 +25,7 @@ use Spatie\IcalendarGenerator\Components\Timezone;
 use Spatie\IcalendarGenerator\Enums\TimezoneEntryType;
 use Spatie\IcalendarGenerator\Components\TimezoneEntry;
 use Spatie\IcalendarGenerator\Components\Event as CalendarEvent;
+
 
 class EventController extends Controller
 {
@@ -185,8 +188,7 @@ class EventController extends Controller
         $collection = $collection->where('event_start_date', '>=', $event_start_date);  
         $collection = $collection->where('event_start_date', '<=', $event_end_date);  
         $collection = $collection->orderBy("event_start_date", 'DESC')->orderBy("event_start_time", 'DESC');  
-        $collection = $collection->take(1)->get();
-        // dd($collection);
+        $collection = $collection->get();
 
         if($event_data['export_type'] == "csv") {
             $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.csv';
@@ -194,35 +196,24 @@ class EventController extends Controller
             Excel::store(new EventExport($collection), $newfile, 'csvlocal');    
         } else {
             $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.ics';
-            // $newfile = 'event-export-'.date('Y-m-d h:i:sP').'.ics';
-            // echo $newfile;
             foreach ($collection as $key => $single_event) {
+                $event_start_date_time = date('Y-m-d H:i:s', strtotime($single_event->event_start_date.' '.$single_event->event_start_time));
+                $event_start_date_time = new DateTime($event_start_date_time); 
+                $event_start_date_time->setTimezone(new DateTimeZone("UTC")); 
+
+                $event_end_date_time = date('Y-m-d H:i:s', strtotime($single_event->event_start_date.' '.$single_event->event_end_time));
+                $event_end_date_time = new DateTime($event_end_date_time); 
+                $event_end_date_time->setTimezone(new DateTimeZone("UTC")); 
                 $create_event[] = CalendarEvent::create($single_event->title)
                                 ->image($single_event->download_path)
                                 ->name($single_event->title)
                                 ->address($single_event->location)
                                 ->description($single_event->description)
                                 ->uniqueIdentifier(Str::uuid()->toString())
-                                ->createdAt(new DateTime($single_event->event_start_date))
-                                ->startsAt(new DateTime($single_event->event_start_date.' '.$single_event->event_start_time))
-                                ->endsAt(new DateTime($single_event->event_start_date.' '.$single_event->event_end_time));
+                                ->createdAt($event_start_date_time)
+                                ->startsAt($event_start_date_time)
+                                ->endsAt($event_end_date_time);
             }
-            // $timezoneEntry = TimezoneEntry::create(
-            //     TimezoneEntryType::daylight(),
-            //     new DateTime($single_event->event_start_date),
-            //     '+00:00',
-            //     '+02:00'
-            // );
-            
-            // $timezone = Timezone::create('Europe/Brussels')
-            //     ->entry($timezoneEntry);
-            
-            // $calendar = Calendar::create()
-            //     ->timezone($timezone)->event($create_event);
-            // $timezone = Timezone::create('Asia/Kolkata')->entry($timezoneEntry);
-            // $timezone = Timezone::create('Europe/London');
-            // $calendar = Calendar::create('Calendar with timezones')->timezone($timezone);
-            // $timezone = Timezone::create('Asia/Kolkata');
             $calendar = Calendar::create('Event calendar')->event($create_event);
             // return response($calendar->get(), 200, [
             //     'Content-Type' => 'text/calendar; charset=utf-8',
@@ -258,11 +249,43 @@ class EventController extends Controller
 
 
         $event_data = $request->all();
+        $file = $request->file('import_file');
 
         if($event_data['import_type'] == "csv") {
-            $file = $request->file('import_file');
             Excel::import(new EventImport(auth()->user()->id), $file);
         } else {
+            $ical = new ICal($file);
+            $all_events = $ical->events();
+            foreach ($all_events as $key => $row) {
+                $row = (array) $row;
+                $start_date = date('Y-m-d', strtotime($row['dtstart']));
+                $start_time = date('H:i:s', strtotime($row['dtstart']));
+                $end_time = date('H:i:s', strtotime($row['dtend']));
+                
+                Event::updateOrCreate(
+                    [
+                        'title'             => isset($row['summary']) ? $row['summary'] : null,
+                        'user_id'           => auth()->user()->id,
+                        'description'       => isset($row['description']) ? $row['description'] : null,
+                        'location'          => isset($row['location']) ? $row['location'] : null,
+                        // 'event_category'          => isset($row['category']) ? $row['category'] : null,
+                        'event_start_date'  => $start_date,
+                        'event_start_time'  => $start_time,
+                        'event_end_time'    => $end_time,
+                    ],
+                    [
+                        'title'             => isset($row['summary']) ? $row['summary'] : null,
+                        'user_id'           => auth()->user()->id,
+                        'description'       => isset($row['description']) ? $row['description'] : null,
+                        'location'          => isset($row['location']) ? $row['location'] : null,
+                        // 'event_category'          => isset($row['category']) ? $row['category'] : null,
+                        'event_start_date'  => $start_date,
+                        'event_start_time'  => $start_time,
+                        'event_end_time'    => $end_time,
+                        'is_active'         =>  1,
+                    ]
+                );
+            }
         }
         return response()->json(['message' => 'File imported successfully.'], 200);
     }

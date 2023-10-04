@@ -34,9 +34,9 @@ class EventImport implements ToCollection, WithChunkReading, ShouldQueue, WithHe
         foreach ($rows as $row) {
             $date = new DateTime(trim($row['start_date_time']));
             $start_date = $date->format('Y-m-d');
-            $start_time = $date->format('h:i').':00';
+            $start_time = $date->format('H:i:s');
             $date = new DateTime(trim($row['end_date_time']));
-            $end_time = $date->format('h:i').':00';
+            $end_time = $date->format('H:i:s');
 
             Event::updateOrCreate(
                 [

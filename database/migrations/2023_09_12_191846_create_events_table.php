@@ -14,15 +14,15 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->string('title');
-            $table->text('description');
-            $table->string('location');
+            $table->string('title')->nullable();
+            $table->text('description')->nullable();
+            $table->string('location')->nullable();
             $table->string('file_name')->nullable();
             $table->string('file_path')->nullable();
-            $table->string('event_category');
-            $table->date('event_start_date');
-            $table->time('event_start_time');
-            $table->time('event_end_time');
+            $table->string('event_category')->nullable();
+            $table->date('event_start_date')->nullable();
+            $table->time('event_start_time')->nullable();
+            $table->time('event_end_time')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
