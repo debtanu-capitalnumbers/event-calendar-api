@@ -21,6 +21,7 @@ class UpdateEventRequest extends FormRequest
      */
     public function rules(): array
     {
+        $reason = $this->request->get('cover_image'); // Get the input value
         return [
             'title' => 'required|string|max:255',
             'description' => 'required',
@@ -30,5 +31,10 @@ class UpdateEventRequest extends FormRequest
             'event_start_time' => 'required',
             'event_end_time' => 'required',
         ];
+
+        // Check condition to apply proper rules
+        if (!empty($reason)) {
+            $rules['cover_image'] = 'required|mimes:png,jpg,jpeg|max:4096';
+        }
     }
 }

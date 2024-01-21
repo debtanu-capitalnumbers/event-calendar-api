@@ -17,6 +17,8 @@ use App\Http\Resources\EventResource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreEventRequest;
+use App\Http\Requests\ExportEventRequest;
+use App\Http\Requests\ImportEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\EventCalendarResource;
@@ -77,16 +79,6 @@ class EventController extends Controller
     {
         $event_data = $request->all();
         if(!empty($event_data['cover_image'])){
-            $validator = Validator::make($request->all(), [
-                'cover_image' => 'required|mimes:png,jpg,jpeg|max:4096',
-            ], [
-                'cover_image.mimes' => 'Only support JPG/JPEG/PNG format.',
-                'cover_image.size' => 'Maximum upload image size 4MB.',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->messages()->all(), 'message' => 'Errors found for cover image.'], 422);
-            }
             $cover_image = $event_data['cover_image'];
             $path_parts = pathinfo($cover_image->getClientOriginalName());
     
@@ -116,16 +108,6 @@ class EventController extends Controller
     {
         $event_data = $request->all();
         if(!empty($event_data['cover_image'])){
-            $validator = Validator::make($request->all(), [
-                'cover_image' => 'required|mimes:png,jpg,jpeg|max:4096',
-            ], [
-                'cover_image.mimes' => 'Only support JPG/JPEG/PNG format.',
-                'cover_image.size' => 'Maximum upload image size 4MB.',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->messages()->all(), 'message' => 'Errors found for cover image.'], 422);
-            }
             $cover_image = $event_data['cover_image'];
             $path_parts = pathinfo($cover_image->getClientOriginalName());
     
@@ -154,28 +136,12 @@ class EventController extends Controller
     /**
      * export the specified resource from storage.
      */
-    public function export(Request $request)
+    public function export(ExportEventRequest $request)
     {
         my_export_csv();
-        $validator = Validator::make($request->all(), [
-            'export_type' => 'required',
-            'event_start_date' => 'required',
-            'event_end_date' => 'required',
-        ], [
-            'export_type.required' => 'The event export type field is required.',
-            'event_start_date.required' => 'The event start date field is required.',
-            'event_end_date.required' => 'The event end date field is required.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->messages()->all(), 'message' => 'Errors found for cover image.'], 422);
-        }  
-
-
         $event_data = $request->all();
         $event_start_date = $event_data['event_start_date'];
-        $event_start_date_strtotime = strtotime($event_start_date);
-        
+        $event_start_date_strtotime = strtotime($event_start_date);        
         $event_end_date = $event_data['event_end_date'];
         $event_end_date_strtotime = strtotime($event_end_date);
 
@@ -229,28 +195,11 @@ class EventController extends Controller
     /**
      * export the specified resource from storage.
      */
-    public function import(Request $request)
+    public function import(ImportEventRequest $request)
     {
         my_export_csv();
-        $validator = Validator::make($request->all(), [
-            'import_type' => 'required',
-            'import_file' => 'required|mimes:csv,txt,ics|max:4096',
-            // 'import_file' => 'required|mimes:text/csv,text/plain,application/csv,text/comma-separated-values,text/anytext,application/octet-stream,application/txt,text/calendar|max:4096',
-        ], [
-            'import_type.required' => 'The event import type field is required.',
-            'import_file.required' => 'The event import file is required.',
-            'import_file.mimes' => 'Only support CSV/CALENDAR format.',
-            'import_file.size' => 'Maximum upload image size 4MB.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->messages()->all(), 'message' => 'Errors found for import file.'], 422);
-        }  
-
-
         $event_data = $request->all();
         $file = $request->file('import_file');
-
         if($event_data['import_type'] == "csv") {
             Excel::import(new EventImport(auth()->user()->id), $file);
         } else {
