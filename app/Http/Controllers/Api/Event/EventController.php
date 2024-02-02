@@ -140,6 +140,26 @@ class EventController extends Controller
     {
         my_export_csv();
         $event_data = $request->all();
+        $collection = $this->fetchEventCollection($event_data);
+
+        if($event_data['export_type'] == "csv") {
+            $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.csv';
+            my_export_csv();
+            Excel::store(new EventExport($collection), $newfile, 'csvlocal');    
+        } else {
+            $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.ics';
+            $calendar = $this->createCalendarCollection($collection);
+            Storage::disk('local')->put('public/csv/'.$newfile, $calendar->get());
+        }
+        $url = asset('storage/csv/'.$newfile);
+        return response()->json(['url' => $url, 'message' => 'File generated successfully.'], 200);
+    }
+    
+    /**
+     * fetch event collection.
+     */
+    public function fetchEventCollection($event_data)
+    {
         $event_start_date = $event_data['event_start_date'];
         $event_start_date_strtotime = strtotime($event_start_date);        
         $event_end_date = $event_data['event_end_date'];
@@ -155,45 +175,39 @@ class EventController extends Controller
         $collection = $collection->where('event_start_date', '<=', $event_end_date);  
         $collection = $collection->orderBy("event_start_date", 'DESC')->orderBy("event_start_time", 'DESC');  
         $collection = $collection->get();
-
-        if($event_data['export_type'] == "csv") {
-            $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.csv';
-            my_export_csv();
-            Excel::store(new EventExport($collection), $newfile, 'csvlocal');    
-        } else {
-            $newfile = 'event-export-'.date('Y-m-d-H-i-s').'.ics';
-            foreach ($collection as $key => $single_event) {
-                $event_start_date_time = date('Y-m-d H:i:s', strtotime($single_event->event_start_date.' '.$single_event->event_start_time));
-                $event_start_date_time = new DateTime($event_start_date_time); 
-                $event_start_date_time->setTimezone(new DateTimeZone("UTC")); 
-
-                $event_end_date_time = date('Y-m-d H:i:s', strtotime($single_event->event_start_date.' '.$single_event->event_end_time));
-                $event_end_date_time = new DateTime($event_end_date_time); 
-                $event_end_date_time->setTimezone(new DateTimeZone("UTC")); 
-                $create_event[] = CalendarEvent::create($single_event->title)
-                                ->image($single_event->download_path)
-                                ->name($single_event->title)
-                                ->address($single_event->location)
-                                ->description($single_event->description)
-                                ->uniqueIdentifier(Str::uuid()->toString())
-                                ->createdAt($event_start_date_time)
-                                ->startsAt($event_start_date_time)
-                                ->endsAt($event_end_date_time);
-            }
-            $calendar = Calendar::create('Event calendar')->event($create_event);
-            // return response($calendar->get(), 200, [
-            //     'Content-Type' => 'text/calendar; charset=utf-8',
-            //     'Content-Disposition' => 'attachment; filename="my-awesome-calendar.ics"',
-            // ]);
-            $calendar = Calendar::create('Event calendar')->event($create_event);
-            Storage::disk('local')->put('public/csv/'.$newfile, $calendar->get());
-        }
-        $url = asset('storage/csv/'.$newfile);
-        return response()->json(['url' => $url, 'message' => 'File generated successfully.'], 200);
+        return $collection;
     }
     
     /**
-     * export the specified resource from storage.
+     * create calendar collection.
+     */
+    public function createCalendarCollection($collection)
+    {
+        foreach ($collection as $key => $single_event) {
+            $event_start_date_time = date('Y-m-d H:i:s', strtotime($single_event->event_start_date.' '.$single_event->event_start_time));
+            $event_start_date_time = new DateTime($event_start_date_time); 
+            $event_start_date_time->setTimezone(new DateTimeZone("UTC")); 
+
+            $event_end_date_time = date('Y-m-d H:i:s', strtotime($single_event->event_start_date.' '.$single_event->event_end_time));
+            $event_end_date_time = new DateTime($event_end_date_time); 
+            $event_end_date_time->setTimezone(new DateTimeZone("UTC")); 
+            $create_event[] = CalendarEvent::create($single_event->title)
+                            ->image($single_event->download_path)
+                            ->name($single_event->title)
+                            ->address($single_event->location)
+                            ->description($single_event->description)
+                            ->uniqueIdentifier(Str::uuid()->toString())
+                            ->createdAt($event_start_date_time)
+                            ->startsAt($event_start_date_time)
+                            ->endsAt($event_end_date_time);
+        }
+        $calendar = Calendar::create('Event calendar')->event($create_event);
+            
+        return $calendar;
+    }
+    
+    /**
+     * import the specified resource from storage.
      */
     public function import(ImportEventRequest $request)
     {
@@ -206,36 +220,44 @@ class EventController extends Controller
             $ical = new ICal($file);
             $all_events = $ical->events();
             foreach ($all_events as $key => $row) {
-                $row = (array) $row;
-                $start_date = date('Y-m-d', strtotime($row['dtstart']));
-                $start_time = date('H:i:s', strtotime($row['dtstart']));
-                $end_time = date('H:i:s', strtotime($row['dtend']));
-                
-                Event::updateOrCreate(
-                    [
-                        'title'             => isset($row['summary']) ? $row['summary'] : null,
-                        'user_id'           => auth()->user()->id,
-                        'description'       => isset($row['description']) ? $row['description'] : null,
-                        'location'          => isset($row['location']) ? $row['location'] : null,
-                        // 'event_category'          => isset($row['category']) ? $row['category'] : null,
-                        'event_start_date'  => $start_date,
-                        'event_start_time'  => $start_time,
-                        'event_end_time'    => $end_time,
-                    ],
-                    [
-                        'title'             => isset($row['summary']) ? $row['summary'] : null,
-                        'user_id'           => auth()->user()->id,
-                        'description'       => isset($row['description']) ? $row['description'] : null,
-                        'location'          => isset($row['location']) ? $row['location'] : null,
-                        // 'event_category'          => isset($row['category']) ? $row['category'] : null,
-                        'event_start_date'  => $start_date,
-                        'event_start_time'  => $start_time,
-                        'event_end_time'    => $end_time,
-                        'is_active'         =>  1,
-                    ]
-                );
+                $this->importRow($row);
             }
         }
         return response()->json(['message' => 'File imported successfully.'], 200);
+    }
+
+    /**
+     * insert or update single row.
+     */
+    public function importRow($row)
+    {
+        $row = (array) $row;
+        $start_date = date('Y-m-d', strtotime($row['dtstart']));
+        $start_time = date('H:i:s', strtotime($row['dtstart']));
+        $end_time = date('H:i:s', strtotime($row['dtend']));
+        
+        Event::updateOrCreate(
+            [
+                'title'             => isset($row['summary']) ? $row['summary'] : null,
+                'user_id'           => auth()->user()->id,
+                'description'       => isset($row['description']) ? $row['description'] : null,
+                'location'          => isset($row['location']) ? $row['location'] : null,
+                // 'event_category'          => isset($row['category']) ? $row['category'] : null,
+                'event_start_date'  => $start_date,
+                'event_start_time'  => $start_time,
+                'event_end_time'    => $end_time,
+            ],
+            [
+                'title'             => isset($row['summary']) ? $row['summary'] : null,
+                'user_id'           => auth()->user()->id,
+                'description'       => isset($row['description']) ? $row['description'] : null,
+                'location'          => isset($row['location']) ? $row['location'] : null,
+                // 'event_category'          => isset($row['category']) ? $row['category'] : null,
+                'event_start_date'  => $start_date,
+                'event_start_time'  => $start_time,
+                'event_end_time'    => $end_time,
+                'is_active'         =>  1,
+            ]
+        );
     }
 }
